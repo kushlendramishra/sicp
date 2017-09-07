@@ -1,0 +1,169 @@
+(#%require sicp-pict)
+
+(define (flipped-pairs painter)
+  (let ((painter2 (beside painter (flip-vert painter))))
+    (below painter2 painter2)))
+
+(paint (flipped-pairs einstein))
+
+(define (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter (- n 1))))
+        (beside painter (below smaller smaller)))))
+
+;;2.44
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+        (below painter (beside smaller smaller)))))
+
+(paint (right-split einstein 2))
+
+(paint (up-split einstein 2))
+
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up))
+              (bottom-right (below right right))
+              (corner (corner-split painter (- n 1))))
+          (beside (below painter top-left)
+                  (below bottom-right corner))))))
+
+(paint (corner-split einstein 2))
+
+(define (square-limit painter n)
+  (let ((quarter (corner-split painter n)))
+    (let ((half (beside (flip-horiz quarter) quarter)))
+      (below (flip-vert half) half))))
+
+
+;;2.45
+(define (split op1 op2)
+  (define (iter painter n)
+    (if (= n 0)
+        painter
+        (let ((smaller (iter painter (- n 1))))
+          (op1 painter (op2 smaller smaller)))))
+  iter)
+
+(define right-split1 (split beside below))
+(define up-split1 (split below beside))
+
+(paint (right-split1 einstein 2))
+
+;;2.46
+(define (make-vect x y)
+  (cons x y))
+
+(define (xcor-vect vect)
+  (car vect))
+
+(define (ycor-vect vect)
+  (cdr vect))
+
+(define (vect-op op)
+  (lambda (v1 v2)
+    (let ((x1 (xcor-vect v1))
+          (y1 (ycor-vect v1))
+          (x2 (xcor-vect v2))
+          (y2 (ycor-vect v2)))
+      (make-vect (op x1 x2)
+                 (op y1 y2)))))
+
+(define add-vect (vect-op +))
+
+(define sub-vect (vect-op -))
+
+
+(define (scale-vect v1 s)
+  (let ((x1 (xcor-vect v1))
+        (y1 (ycor-vect v1)))
+    (make-vect (* s x1)
+               (* s y1))))
+
+(define mv1 (make-vect 3 3))
+
+(define mv2 (make-vect 2 3))
+
+(define mv3 (add-vect mv1 mv2))
+(define mv3 (sub-vect mv1 mv2))
+
+;;2.47
+(define (make-frame origin edge1 edge2)
+ (list origin edge1 edge2))
+
+(define (origin-frame f)
+  (car f))
+
+(define (edge1-frame f)
+  (cadr f))
+
+(define (edge2-frame f)
+  (caddrf))
+
+;;second implementation
+(define (make-frame origin edge1 edge2)
+ (cons origin (cons edge1 edge2)))
+
+(define (origin-frame f)
+  (car f))
+
+(define (edge1-frame f)
+  (cadr f))
+
+(define (edge2-frame f)
+  (cddr f))
+
+;;2.48
+(define (make-segment startv endv)
+  (cons starv endv))
+
+(define (start-segment s)
+  (car s))
+
+(define (end-segment s)
+  (cdr s))
+
+;;2.49
+(define (segments->painter segment-list)
+  (lambda (frame)
+    (for-each
+     (lambda (segment)
+       (draw-line
+        ((frame-coord-map frame) (start-segment segment))
+        ((frame-coord-map frame) (end-segment segment))))
+     segment-list)))
+
+(define (frame-outline-painter f)
+  (let ((forig (origin-frame f))
+        (fedge1 (origin-edge1 f))
+        (fedge2 (origin-edge2 f)))
+    (let ((bl forig)
+          (tl (add-vect forig fedge1))
+          (tr (add-vect forig (add-vect fedge1 fedge2)))
+          (br (add-vect forig fedge2)))
+      (segments->painter
+       (list (make-segment bl tl)
+             (make-segment tl tr)
+             (make-segment tr br)
+             (make-segment br bl))))))
+
+(define (frame-outline-painter f)
+  (let ((forig (origin-frame f))
+        (fedge1 (origin-edge1 f))
+        (fedge2 (origin-edge2 f)))
+    (let ((bl forig)
+          (tl (add-vect forig fedge1))
+          (tr (add-vect forig (add-vect fedge1 fedge2)))
+          (br (add-vect forig fedge2)))
+      (segments->painter
+       (list (make-segment bl tr)
+             (make-segment br tl))))))
+
+
+        
